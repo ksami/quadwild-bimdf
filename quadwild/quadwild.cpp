@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <clocale>
 
 #include "functions.h"
+#include "trace.h"
 #ifdef _WIN32
 #  include <windows.h>
 #  include <stdlib.h>

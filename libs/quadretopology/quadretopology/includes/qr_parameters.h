@@ -75,14 +75,14 @@ struct Parameters {
 #else
     bool useFlowSolver = true;
 #endif
-    std::string flow_config_filename;
-    std::string satsuma_config_filename;
+    char *flow_config_filename;
+    char *satsuma_config_filename;
     bool initialRemeshing;
     double initialRemeshingEdgeFactor;
     bool reproject;
     bool splitConcaves;
     bool finalSmoothing;
-    
+
     ILPMethod ilpMethod;
     double alpha;
     bool isometry;
@@ -108,11 +108,11 @@ struct Parameters {
     int quadrangulationFixedSmoothingIterations;
     int quadrangulationNonFixedSmoothingIterations;
     bool doubletRemoval;
-    
+
     int resultSmoothingIterations;
     double resultSmoothingNRing;
     int resultSmoothingLaplacianIterations;
-    double resultSmoothingLaplacianNRing;    
+    double resultSmoothingLaplacianNRing;
 
     Parameters() {
         initialRemeshing = DEFAULTINITIALREMESHING;
@@ -120,7 +120,7 @@ struct Parameters {
         reproject = DEFAULTREPROJECT;
         splitConcaves = DEFAULTSPLITCONCAVES;
         finalSmoothing = DEFAULTFINALSMOOTHING;
-                
+
         ilpMethod = DEFAULTILPMETHOD;
         alpha = DEFAULTALPHA;
 
@@ -145,7 +145,7 @@ struct Parameters {
         quadrangulationFixedSmoothingIterations = DEFAULTQUADRANGULATIONFIXEDSMOOTHINGITERATIONS;
         quadrangulationNonFixedSmoothingIterations = DEFAULTQUADRANGULATIONNONFIXEDSMOOTHINGITERATIONS;
         doubletRemoval = DEFAULTDOUBLETREMOVAL;
-        
+
         resultSmoothingIterations = DEFAULTRESULTSMOOTHINGITERATIONS;
         resultSmoothingNRing = DEFAULTRESULTSMOOTHINGNRING;
         resultSmoothingLaplacianIterations = DEFAULTRESULTSMOOTHINGLAPLACIANITERATIONS;

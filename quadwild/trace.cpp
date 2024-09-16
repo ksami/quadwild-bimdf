@@ -2,6 +2,12 @@
 
 #include <tracing/tracer_interface.h>
 
+bool trace2(const char *filename_prefix)
+{
+    TraceMesh traceTrimesh;
+    return trace(filename_prefix, traceTrimesh);
+}
+
 bool trace(const std::string& filename_prefix, TraceMesh& traceTrimesh)
 {
     std::string meshFilename = filename_prefix + ".obj";

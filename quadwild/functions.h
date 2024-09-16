@@ -1,5 +1,4 @@
-#ifndef FUNCTIONS_H
-#define FUNCTIONS_H
+#pragma once
 
 #include <triangle_mesh_type.h>
 #include <mesh_manager.h>
@@ -32,12 +31,19 @@ struct Parameters {
     bool hasField;
 };
 
+extern "C" __declspec(dllexport) void remeshAndField2(
+    const Parameters &parameters,
+    const char *meshFilename,
+    const char *sharpFilename,
+    const char *fieldFilename);
+
 void remeshAndField(
         FieldTriMesh& trimesh,
         const Parameters& parameters,
         const std::string& meshFilename,
         const std::string& sharpFilename,
         const std::string& fieldFilename);
+
 
 void quadrangulate(
         const std::string& path,
@@ -52,9 +58,7 @@ void quadrangulate(
         std::vector<int> ilpResult,
         const Parameters& parameters);
 
-typename TriangleMesh::ScalarType avgEdge(const TriangleMesh& trimesh);
 bool loadConfigFile(const std::string& filename, Parameters& parameters);
 
-#include "functions.cpp"
 
-#endif // FUNCTIONS_H
+typename TriangleMesh::ScalarType avgEdge(const TriangleMesh &trimesh);

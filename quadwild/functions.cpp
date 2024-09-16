@@ -1,6 +1,20 @@
 #include "functions.h"
 #include "trace.h"
 
+void remeshAndField2(
+    const Parameters &parameters,
+    const char *meshFilename,
+    const char *sharpFilename,
+    const char *fieldFilename)
+{
+    FieldTriMesh trimesh;
+    bool allQuad;
+
+    bool loaded = trimesh.LoadTriMesh(meshFilename, allQuad);
+    trimesh.UpdateDataStructures();
+    remeshAndField(trimesh, parameters, meshFilename, sharpFilename, fieldFilename);
+}
+
 inline void remeshAndField(
         FieldTriMesh& trimesh,
         const Parameters& parameters,

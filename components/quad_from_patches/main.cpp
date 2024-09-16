@@ -63,6 +63,10 @@ using HSW = Timekeeper::HierarchicalStopWatch;
 using Timekeeper::ScopedStopWatch;
 
 bool LocalUVSm=false;
+extern "C" __declspec(dllexport) int quadPatches(const char *meshPath,
+                                                   QuadRetopology::Parameters &parameters,
+                                                   float scaleFactor,
+                                                   int fixedChartClusters);
 typename TriangleMesh::ScalarType avgEdge(const TriangleMesh& trimesh);
 void loadSetupFile(const std::string& path, QuadRetopology::Parameters& parameters, float& scaleFactor, int& fixedChartClusters);
 void SaveSetupFile(const std::string& path, QuadRetopology::Parameters& parameters, float& scaleFactor, int& fixedChartClusters);
@@ -76,6 +80,50 @@ int actual_main(int argc, char *argv[])
     // any signs of a an application crash!
     SetErrorMode(0);
 #endif
+    int CurrNum = 0;
+
+    if (argc < 2 || argc > 5)
+    {
+        std::cerr << "usage: " << argv[0] << " <input.obj> [num] [setup.txt] [out_stats.json]"
+                  << std::endl;
+        exit(1);
+    }
+
+    std::string meshFilename = std::string(argv[1]);
+
+    if (argc > 2)
+    {
+        CurrNum = atoi(argv[2]);
+    }
+    std::string configFilename = "basic_setup.txt";
+    if (argc > 3)
+    {
+        configFilename = argv[3];
+    }
+    std::string json_filename = "";
+    if (argc > 4)
+    {
+        json_filename = argv[4];
+    }
+    QuadRetopology::Parameters parameters;
+    float scaleFactor;
+    int fixedChartClusters;
+
+    loadSetupFile(configFilename, parameters, scaleFactor, fixedChartClusters);
+
+    parameters.chartSmoothingIterations = 0;                   // Chart smoothing
+    parameters.quadrangulationFixedSmoothingIterations = 0;    // Smoothing with fixed borders of the patches
+    parameters.quadrangulationNonFixedSmoothingIterations = 0; // Smoothing with fixed borders of the quadrangulation
+    parameters.feasibilityFix = false;
+
+    return quadPatches(meshFilename.c_str(), parameters, scaleFactor, fixedChartClusters);
+}
+
+int quadPatches(const char *meshPath,
+                  QuadRetopology::Parameters &parameters,
+                  float scaleFactor,
+                  int fixedChartClusters)
+{
     HSW sw_root("main");
     HSW sw_load("load", sw_root);
     HSW sw_smooth("smooth", sw_root);
@@ -83,15 +131,15 @@ int actual_main(int argc, char *argv[])
 
     sw_root.resume();
 
-    //Use "." as decimal separator
+    // Use "." as decimal separator
     std::setlocale(LC_NUMERIC, "en_US.UTF-8");
 
-    int CurrNum=0;
+    int CurrNum = 0;
 
     TriangleMesh trimesh;
     std::vector<std::vector<size_t>> trimeshPartitions;
     std::vector<std::vector<size_t>> trimeshCorners;
-    std::vector<std::pair<size_t,size_t> > trimeshFeatures;
+    std::vector<std::pair<size_t, size_t>> trimeshFeatures;
     std::vector<size_t> trimeshFeaturesC;
 
     PolyMesh quadmesh;
@@ -99,57 +147,28 @@ int actual_main(int argc, char *argv[])
     std::vector<std::vector<size_t>> quadmeshCorners;
     std::vector<int> ilpResult;
 
-//    QuadRetopology::Parameters parameters;
-//    parameters.alpha = 0.05; //Alpha: blends between isometry (alpha) and regularity (1-alpha)
-//    parameters.ilpMethod = QuadRetopology::ILPMethod::LEASTSQUARES; //ILP method
-//    parameters.timeLimit = 5 * 60; //Time limit in seconds
-//    parameters.gapLimit = 0.1; //When it reaches this gap value, optimization stops
-//    parameters.minimumGap = 0.25; //Optimization has to reach at least this minimum gap, otherwise faster methods are performed
-//    parameters.isometry = true; //Activate isometry
-//    parameters.regularityQuadrilaterals = true; //Activate regularity for quadrilaterals
-//    parameters.regularityNonQuadrilaterals = true; //Activate regularity for non-quadrilaterals
-//    parameters.regularityNonQuadrilateralWeight = 0.9; //Regularity for non-quadrilaterals weight
-//    parameters.alignSingularities = true; //Activate singularity alignment
-//    parameters.alignSingularitiesWeight = 0.3; //Singularity alignment weight
-//    parameters.repeatLosingConstraintsIterations = true;
-//    parameters.repeatLosingConstraintsQuads = false;
-//    parameters.repeatLosingConstraintsNonQuads = false;
-//    parameters.repeatLosingConstraintsAlign = true;
-//    parameters.hardParityConstraint = true; //Flag to choose if use hard constraints or not
-    if(argc<2 || argc > 5)
-    {
-        std::cerr << "usage: " << argv[0] << " <input.obj> [num] [setup.txt] [out_stats.json]"
-                  << std::endl;
-        exit(1);
-    }
-
-    if (argc>2)
-    {
-        CurrNum=atoi(argv[2]);
-    }
-    std::string configFilename = "basic_setup.txt";
-    if (argc>3) {
-        configFilename = argv[3];
-    }
-    std::string json_filename = "";
-    if (argc>4) {
-        json_filename = argv[4];
-    }
-    QuadRetopology::Parameters parameters;
-    float scaleFactor;
-    int fixedChartClusters;
+    //    QuadRetopology::Parameters parameters;
+    //    parameters.alpha = 0.05; //Alpha: blends between isometry (alpha) and regularity (1-alpha)
+    //    parameters.ilpMethod = QuadRetopology::ILPMethod::LEASTSQUARES; //ILP method
+    //    parameters.timeLimit = 5 * 60; //Time limit in seconds
+    //    parameters.gapLimit = 0.1; //When it reaches this gap value, optimization stops
+    //    parameters.minimumGap = 0.25; //Optimization has to reach at least this minimum gap, otherwise faster methods are performed
+    //    parameters.isometry = true; //Activate isometry
+    //    parameters.regularityQuadrilaterals = true; //Activate regularity for quadrilaterals
+    //    parameters.regularityNonQuadrilaterals = true; //Activate regularity for non-quadrilaterals
+    //    parameters.regularityNonQuadrilateralWeight = 0.9; //Regularity for non-quadrilaterals weight
+    //    parameters.alignSingularities = true; //Activate singularity alignment
+    //    parameters.alignSingularitiesWeight = 0.3; //Singularity alignment weight
+    //    parameters.repeatLosingConstraintsIterations = true;
+    //    parameters.repeatLosingConstraintsQuads = false;
+    //    parameters.repeatLosingConstraintsNonQuads = false;
+    //    parameters.repeatLosingConstraintsAlign = true;
+    //    parameters.hardParityConstraint = true; //Flag to choose if use hard constraints or not
 
     sw_load.resume();
-    loadSetupFile(configFilename, parameters, scaleFactor, fixedChartClusters);
-
-    parameters.chartSmoothingIterations = 0; //Chart smoothing
-    parameters.quadrangulationFixedSmoothingIterations = 0; //Smoothing with fixed borders of the patches
-    parameters.quadrangulationNonFixedSmoothingIterations = 0; //Smoothing with fixed borders of the quadrangulation
-    parameters.feasibilityFix = false;
-
 
     //MESH LOAD
-    std::string meshFilename = std::string(argv[1]);
+    std::string meshFilename = std::string(meshPath);
     int mask;
     vcg::tri::io::ImporterOBJ<TriangleMesh>::LoadMask(meshFilename.c_str(), mask);
     int err = vcg::tri::io::ImporterOBJ<TriangleMesh>::Open(trimesh, meshFilename.c_str(), mask);
@@ -235,9 +254,6 @@ int actual_main(int argc, char *argv[])
 //                    quadmeshCorners,quadmeshPartitions);
 
 
-#define SMOOTH_OUTPUT
-#ifdef SMOOTH_OUTPUT
-
     sw_smooth.resume();
     //SMOOTH
     std::vector<size_t> QuadPart(quadmesh.face.size(),0);
@@ -275,8 +291,8 @@ int actual_main(int argc, char *argv[])
 
     vcg::tri::io::ExporterOBJ<PolyMesh>::Save(quadmesh, outputFilename.c_str(), vcg::tri::io::Mask::IOM_FACECOLOR);
     sw_save.stop();
-#endif
 
+/*
 #ifdef SAVE_MESHES_FOR_DEBUG
     sw_save.start();
     QuadMeshTracer<PolyMesh> tracerMotorcycle(quadmesh);
@@ -306,29 +322,29 @@ int actual_main(int argc, char *argv[])
    SaveSetupFile(setupFilename, parameters, scaleFactor, fixedChartClusters);
     sw_save.stop();
  #endif
+*/
     sw_root.stop();
     auto sw_result = Timekeeper::HierarchicalStopWatchResult(sw_root);
     sw_result.add_child(qfp_result.stopwatch);
     std::cout << "\n" << sw_result << std::endl;
-    auto json = nlohmann::json{
-      {"runtimes", sw_result},
-      {"quant_eval", qfp_result.eval}};
-    if (!qfp_result.bimdf_results.empty()) {
-        json["bimdf_results"] = qfp_result.bimdf_results;
-    }
-    if (!qfp_result.flow_stats.empty()) {
-        json["flow_stats"] = qfp_result.flow_stats;
-    }
-    if (!qfp_result.ilp_stats_per_cluster.empty()) {
-        json["ilp_stats_per_cluster"] = qfp_result.ilp_stats_per_cluster;
-    }
-    if (!json_filename.empty()) {
-      std::ofstream json_file{json_filename};
-      json_file << std::setw(4) << json;
-    }
+    // auto json = nlohmann::json{
+    //   {"runtimes", sw_result},
+    //   {"quant_eval", qfp_result.eval}};
+    // if (!qfp_result.bimdf_results.empty()) {
+    //     json["bimdf_results"] = qfp_result.bimdf_results;
+    // }
+    // if (!qfp_result.flow_stats.empty()) {
+    //     json["flow_stats"] = qfp_result.flow_stats;
+    // }
+    // if (!qfp_result.ilp_stats_per_cluster.empty()) {
+    //     json["ilp_stats_per_cluster"] = qfp_result.ilp_stats_per_cluster;
+    // }
+    // if (!json_filename.empty()) {
+    //   std::ofstream json_file{json_filename};
+    //   json_file << std::setw(4) << json;
+    // }
     return 0;
 }
-
 
 typename TriangleMesh::ScalarType avgEdge(const TriangleMesh& trimesh)
 {
@@ -460,12 +476,12 @@ void loadSetupFile(const std::string& path, QuadRetopology::Parameters& paramete
         parameters.hardParityConstraint=true;
 
     fscanf(f,"scaleFact %f\n",&scaleFactor);
-    
+
     fscanf(f,"fixedChartClusters %d\n",&fixedChartClusters);
     fscanf(f,"useFlowSolver %d\n",&IntVar);
     parameters.useFlowSolver = IntVar;
     std::cout << "useFlowSolver: " << parameters.useFlowSolver << std::endl;
-    
+
     std::array<char, 1024> filename = {0};
 
     int ret = fscanf(f,"flow_config_filename \"%1000[^\"]\"\n",filename.data());
