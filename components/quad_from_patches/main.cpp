@@ -111,11 +111,6 @@ int actual_main(int argc, char *argv[])
 
     loadSetupFile(configFilename, parameters, scaleFactor, fixedChartClusters);
 
-    parameters.chartSmoothingIterations = 0;                   // Chart smoothing
-    parameters.quadrangulationFixedSmoothingIterations = 0;    // Smoothing with fixed borders of the patches
-    parameters.quadrangulationNonFixedSmoothingIterations = 0; // Smoothing with fixed borders of the quadrangulation
-    parameters.feasibilityFix = false;
-
     return quadPatches(meshFilename.c_str(), parameters, scaleFactor, fixedChartClusters);
 }
 
@@ -164,6 +159,11 @@ int quadPatches(const char *meshPath,
     //    parameters.repeatLosingConstraintsNonQuads = false;
     //    parameters.repeatLosingConstraintsAlign = true;
     //    parameters.hardParityConstraint = true; //Flag to choose if use hard constraints or not
+
+    parameters.chartSmoothingIterations = 0;                   // Chart smoothing
+    parameters.quadrangulationFixedSmoothingIterations = 0;    // Smoothing with fixed borders of the patches
+    parameters.quadrangulationNonFixedSmoothingIterations = 0; // Smoothing with fixed borders of the quadrangulation
+    parameters.feasibilityFix = false;
 
     sw_load.resume();
 
