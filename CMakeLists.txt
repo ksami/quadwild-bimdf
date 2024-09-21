@@ -67,7 +67,7 @@ add_subdirectory("libs/json")
 set(OPENMESH_BUILD_SHARED OFF) # required on windows
 add_subdirectory("libs/OpenMesh")
 if(UNIX)
-    target_compile_options(OpenMeshCore PRIVATE -fPIC)
+    target_compile_options(OpenMeshCoreStatic PRIVATE -fPIC)
 endif()
 if(WIN32)
     add_library( OpenMesh::Core ALIAS OpenMeshCore)
