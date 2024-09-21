@@ -57,17 +57,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  include <windows.h>
 #  include <stdlib.h>
 #  include <errhandlingapi.h>
+#  define EXPORT __declspec(dllexport)
+#else
+#  define EXPORT __attribute__((visibility("default")))
 #endif
 
 using HSW = Timekeeper::HierarchicalStopWatch;
 using Timekeeper::ScopedStopWatch;
 
 bool LocalUVSm=false;
-extern "C" __declspec(dllexport) int quadPatches(const char *meshPath,
-                                                 QuadRetopology::Parameters &parameters,
-                                                 float scaleFactor,
-                                                 int fixedChartClusters,
-                                                 bool enableSmoothing);
+extern "C" EXPORT int quadPatches(const char *meshPath,
+                              QuadRetopology::Parameters &parameters,
+                              float scaleFactor,
+                              int fixedChartClusters,
+                              bool enableSmoothing);
 typename TriangleMesh::ScalarType avgEdge(const TriangleMesh& trimesh);
 void loadSetupFile(const std::string& path, QuadRetopology::Parameters& parameters, float& scaleFactor, int& fixedChartClusters);
 void SaveSetupFile(const std::string& path, QuadRetopology::Parameters& parameters, float& scaleFactor, int& fixedChartClusters);

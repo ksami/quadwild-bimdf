@@ -11,6 +11,12 @@
 #include <quad_from_patches.h>
 #include <quad_mesh_tracer.h>
 
+#ifdef _WIN32
+    #define EXPORT __declspec(dllexport)
+#else
+    #define EXPORT __attribute__((visibility("default")))
+#endif
+
 struct Parameters {
     Parameters() :
         remesh(true),
@@ -31,7 +37,7 @@ struct Parameters {
     bool hasField;
 };
 
-extern "C" __declspec(dllexport) void remeshAndField2(
+extern "C" EXPORT void remeshAndField2(
     const Parameters &parameters,
     const char *meshFilename,
     const char *sharpFilename,
