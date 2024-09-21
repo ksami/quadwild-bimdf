@@ -33,8 +33,8 @@ jobs:
       - name: collect release
         run: |
           cmake -E make_directory release
-          cmake -E copy ${{env.build}}/Build/bin/quadwild release
-          cmake -E copy ${{env.build}}/Build/bin/quad_from_patches release
+          cmake -E copy ${{env.build}}/Build/lib/liblib_quadwild.so release
+          cmake -E copy ${{env.build}}/Build/lib/liblib_quadpatches.so release
           cmake -E copy_directory config release/config
           cmake -E copy README_release.md release
 
@@ -92,8 +92,8 @@ jobs:
       - name: collect release
         run: |
           cmake -E make_directory release
-          cmake -E copy ${{env.build}}/Build/bin/quadwild release
-          cmake -E copy ${{env.build}}/Build/bin/quad_from_patches release
+          cmake -E copy ${{env.build}}/Build/lib/liblib_quadwild.dylib release
+          cmake -E copy ${{env.build}}/Build/lib/liblib_quadpatches.dylib release
           cmake -E copy_directory config release/config
           cmake -E copy README_release.md release
 
@@ -103,4 +103,3 @@ jobs:
           name: macos-binaries
           path: |
             release/*
-
