@@ -64,9 +64,10 @@ using Timekeeper::ScopedStopWatch;
 
 bool LocalUVSm=false;
 extern "C" __declspec(dllexport) int quadPatches(const char *meshPath,
-                                                   QuadRetopology::Parameters &parameters,
-                                                   float scaleFactor,
-                                                   int fixedChartClusters);
+                                                 QuadRetopology::Parameters &parameters,
+                                                 float scaleFactor,
+                                                 int fixedChartClusters,
+                                                 bool enableSmoothing);
 typename TriangleMesh::ScalarType avgEdge(const TriangleMesh& trimesh);
 void loadSetupFile(const std::string& path, QuadRetopology::Parameters& parameters, float& scaleFactor, int& fixedChartClusters);
 void SaveSetupFile(const std::string& path, QuadRetopology::Parameters& parameters, float& scaleFactor, int& fixedChartClusters);
@@ -111,13 +112,14 @@ int actual_main(int argc, char *argv[])
 
     loadSetupFile(configFilename, parameters, scaleFactor, fixedChartClusters);
 
-    return quadPatches(meshFilename.c_str(), parameters, scaleFactor, fixedChartClusters);
+    return quadPatches(meshFilename.c_str(), parameters, scaleFactor, fixedChartClusters, true);
 }
 
 int quadPatches(const char *meshPath,
-                  QuadRetopology::Parameters &parameters,
-                  float scaleFactor,
-                  int fixedChartClusters)
+                QuadRetopology::Parameters &parameters,
+                float scaleFactor,
+                int fixedChartClusters,
+                bool enableSmoothing)
 {
     HSW sw_root("main");
     HSW sw_load("load", sw_root);
@@ -225,21 +227,20 @@ int quadPatches(const char *meshPath,
     const std::vector<double> edgeFactor(trimeshPartitions.size(), EdgeSize);
     auto qfp_result = qfp::quadrangulationFromPatches(trimesh, trimeshPartitions, trimeshCorners, edgeFactor, parameters, fixedChartClusters, quadmesh, quadmeshPartitions, quadmeshCorners, ilpResult);
 
-
-
-    //COLOR AND SAVE QUADRANGULATION
-    vcg::tri::UpdateColor<PolyMesh>::PerFaceConstant(quadmesh);
-    for(size_t i = 0; i < quadmeshPartitions.size(); i++)
-    {
-        vcg::Color4b partitionColor = vcg::Color4b::Scatter(static_cast<int>(quadmeshPartitions.size()), static_cast<int>(i));
-        for(size_t j = 0; j < quadmeshPartitions[i].size(); j++)
+    /*
+        //COLOR AND SAVE QUADRANGULATION
+        vcg::tri::UpdateColor<PolyMesh>::PerFaceConstant(quadmesh);
+        for(size_t i = 0; i < quadmeshPartitions.size(); i++)
         {
-            size_t fId = quadmeshPartitions[i][j];
-            quadmesh.face[fId].C() = partitionColor;
+            vcg::Color4b partitionColor = vcg::Color4b::Scatter(static_cast<int>(quadmeshPartitions.size()), static_cast<int>(i));
+            for(size_t j = 0; j < quadmeshPartitions[i].size(); j++)
+            {
+                size_t fId = quadmeshPartitions[i][j];
+                quadmesh.face[fId].C() = partitionColor;
+            }
         }
-    }
-
-//    size_t CurrNum=FindCurrentNum(meshFilename);
+    */
+    //    size_t CurrNum=FindCurrentNum(meshFilename);
 
     sw_save.resume();
     //SAVE OUTPUT
@@ -253,44 +254,46 @@ int quadPatches(const char *meshPath,
 //    ReMapBoundaries(trimesh,quadmesh,trimeshCorners,trimeshPartitions,
 //                    quadmeshCorners,quadmeshPartitions);
 
+    if (enableSmoothing)
+    {
+        sw_smooth.resume();
+        // SMOOTH
+        std::vector<size_t> QuadPart(quadmesh.face.size(), 0);
+        for (size_t i = 0; i < quadmeshPartitions.size(); i++)
+            for (size_t j = 0; j < quadmeshPartitions[i].size(); j++)
+                QuadPart[quadmeshPartitions[i][j]] = i;
 
-    sw_smooth.resume();
-    //SMOOTH
-    std::vector<size_t> QuadPart(quadmesh.face.size(),0);
-    for (size_t i=0;i<quadmeshPartitions.size();i++)
-        for (size_t j=0;j<quadmeshPartitions[i].size();j++)
-            QuadPart[quadmeshPartitions[i][j]]=i;
+        std::vector<size_t> TriPart(trimesh.face.size(), 0);
+        for (size_t i = 0; i < trimeshPartitions.size(); i++)
+            for (size_t j = 0; j < trimeshPartitions[i].size(); j++)
+                TriPart[trimeshPartitions[i][j]] = i;
 
-    std::vector<size_t> TriPart(trimesh.face.size(),0);
-    for (size_t i=0;i<trimeshPartitions.size();i++)
-        for (size_t j=0;j<trimeshPartitions[i].size();j++)
-            TriPart[trimeshPartitions[i][j]]=i;
+        std::vector<size_t> QuadCornersVect;
+        for (size_t i = 0; i < quadmeshCorners.size(); i++)
+            for (size_t j = 0; j < quadmeshCorners[i].size(); j++)
+                QuadCornersVect.push_back(quadmeshCorners[i][j]);
+        std::sort(QuadCornersVect.begin(), QuadCornersVect.end());
+        auto last = std::unique(QuadCornersVect.begin(), QuadCornersVect.end());
+        QuadCornersVect.erase(last, QuadCornersVect.end());
 
-    std::vector<size_t> QuadCornersVect;
-    for (size_t i=0;i<quadmeshCorners.size();i++)
-        for (size_t j=0;j<quadmeshCorners[i].size();j++)
-            QuadCornersVect.push_back(quadmeshCorners[i][j]);
-    std::sort(QuadCornersVect.begin(),QuadCornersVect.end());
-    auto last=std::unique(QuadCornersVect.begin(),QuadCornersVect.end());
-    QuadCornersVect.erase(last, QuadCornersVect.end());
+        std::cout << "** SMOOTHING **" << std::endl;
+        // SmoothSubdivide(trimesh,quadmesh,trimeshFeatures,trimeshFeaturesC,TriPart,QuadCornersVect,QuadPart,100,0.5,EdgeSize);
+        if (LocalUVSm)
+            LocalUVSmooth(quadmesh, trimesh, trimeshFeatures, trimeshFeaturesC, 30);
+        else
+            MultiCostraintSmooth(quadmesh, trimesh, trimeshFeatures, trimeshFeaturesC, TriPart, QuadCornersVect, QuadPart, 0.5, EdgeSize, 30, 1);
 
-    std::cout<<"** SMOOTHING **"<<std::endl;
-    //SmoothSubdivide(trimesh,quadmesh,trimeshFeatures,trimeshFeaturesC,TriPart,QuadCornersVect,QuadPart,100,0.5,EdgeSize);
-    if (LocalUVSm)
-        LocalUVSmooth(quadmesh,trimesh,trimeshFeatures,trimeshFeaturesC,30);
-    else
-        MultiCostraintSmooth(quadmesh,trimesh,trimeshFeatures,trimeshFeaturesC,TriPart,QuadCornersVect,QuadPart,0.5,EdgeSize,30,1);
+        sw_smooth.stop();
+        sw_save.resume();
+        // SAVE OUTPUT
+        outputFilename = meshFilename;
+        outputFilename.erase(partitionFilename.find_last_of("."));
+        // outputFilename.append("_quadrangulation_smooth.obj");
+        outputFilename += std::string("_") + std::to_string(CurrNum) + std::string("_quadrangulation_smooth") + std::string(".obj");
 
-    sw_smooth.stop();
-    sw_save.resume();
-    //SAVE OUTPUT
-    outputFilename = meshFilename;
-    outputFilename.erase(partitionFilename.find_last_of("."));
-    //outputFilename.append("_quadrangulation_smooth.obj");
-    outputFilename+=std::string("_")+std::to_string(CurrNum)+std::string("_quadrangulation_smooth")+std::string(".obj");
-
-    vcg::tri::io::ExporterOBJ<PolyMesh>::Save(quadmesh, outputFilename.c_str(), vcg::tri::io::Mask::IOM_FACECOLOR);
-    sw_save.stop();
+        vcg::tri::io::ExporterOBJ<PolyMesh>::Save(quadmesh, outputFilename.c_str(), vcg::tri::io::Mask::IOM_FACECOLOR);
+        sw_save.stop();
+    }
 
 /*
 #ifdef SAVE_MESHES_FOR_DEBUG
