@@ -332,7 +332,7 @@ int quadPatches(const char *meshPath,
     sw_root.stop();
     auto sw_result = Timekeeper::HierarchicalStopWatchResult(sw_root);
     sw_result.add_child(qfp_result.stopwatch);
-    std::cout << "\n" << sw_result << std::endl;
+    // std::cout << "\n" << sw_result << std::endl;
     // auto json = nlohmann::json{
     //   {"runtimes", sw_result},
     //   {"quant_eval", qfp_result.eval}};
